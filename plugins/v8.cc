@@ -123,12 +123,24 @@ static v8::Handle<v8::Value> dnsresolve(const v8::Arguments& args)
 {
 	char address[NI_MAXHOST];
 	v8::String::Utf8Value host(args[0]);
+	char **split_res;
 
 	if (args.Length() != 1)
 		return v8::ThrowException(v8::String::New("Bad parameters"));
 
-		
 	DBG("host %s", *host);
+
+	/* Q&D test on host to know if it is a proper hostname */
+	split_res = g_strsplit_set(*host, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
+	if (split_res) {
+		int length = g_strv_length(split_res);
+		g_strfreev(split_res);
+
+		if (length > 1) {
+			v8::ThrowException(
+				v8::String::New("Failed to resolve"));
+		}
+	}
 
 	if (resolve(*host, address, sizeof(address)) < 0)
 		return v8::ThrowException(v8::String::New("Failed to resolve"));
