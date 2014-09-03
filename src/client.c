@@ -84,6 +84,8 @@ static DBusMessage *find_proxy_for_url(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
 	struct jsrun_data *jsrun;
+	pthread_attr_t attrs;
+	int err;
 
 	jsrun = g_try_new0(struct jsrun_data, 1);
 	if (!jsrun)
@@ -94,7 +96,14 @@ static DBusMessage *find_proxy_for_url(DBusConnection *conn,
 	jsrun->conn = dbus_connection_ref(conn);
 	jsrun->msg = dbus_message_ref(msg);
 
-	if (pthread_create(&jsrun->thread, NULL, jsrun_thread, jsrun) != 0) {
+	pthread_attr_init(&attrs);
+	pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+
+	err = pthread_create(&jsrun->thread, &attrs, jsrun_thread, jsrun);
+
+	pthread_attr_destroy(&attrs);
+
+	if (err != 0) {
 		jsrun_free(jsrun);
 		return g_dbus_create_error(msg,
 					PACRUNNER_ERROR_INTERFACE ".Failed",
