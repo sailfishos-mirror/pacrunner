@@ -1,3 +1,7 @@
+ver 0.9:
+	Fix issue with detaching threads that are never joined.
+	Fix issue with resolving wrongly formatted hostnames.
+
 ver 0.8:
 	Fix issue with autostart configuration.
 	Fix issue with GLib mutex handling.
