@@ -107,7 +107,7 @@ static gchar **_g_strappendv(gchar **str_array, const gchar *str)
 	}
 
 	if (str_array) {
-		g_memmove(result, str_array, length * sizeof(gchar *));
+		memmove(result, str_array, length * sizeof(gchar *));
 		memset(str_array, 0, length * sizeof(gchar *));
 	}
 
