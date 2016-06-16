@@ -35,7 +35,6 @@ struct proxy_config {
 	DBusConnection *conn;
 	guint watch;
 
-	char **domains;
 	char **nameservers;
 
 	struct pacrunner_proxy *proxy;
@@ -58,7 +57,6 @@ static void destroy_config(gpointer data)
 	if (config->watch > 0)
 		g_dbus_remove_watch(config->conn, config->watch);
 
-	g_strfreev(config->domains);
 	g_strfreev(config->nameservers);
 
 	g_free(config->sender);
@@ -224,11 +222,12 @@ static DBusMessage *create_proxy_config(DBusConnection *conn,
 		goto done;
 	}
 
-	config->domains = domains;
 	config->nameservers = nameservers;
 
-	domains = NULL;
 	nameservers = NULL;
+
+	if (pacrunner_proxy_set_domains(config->proxy, domains) < 0)
+		pacrunner_error("Failed to set proxy domains");
 
 	if (g_str_equal(method, "direct")) {
 		if (pacrunner_proxy_set_direct(config->proxy) < 0)

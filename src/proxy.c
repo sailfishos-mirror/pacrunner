@@ -23,6 +23,9 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <pthread.h>
 
@@ -37,6 +40,17 @@ struct pacrunner_proxy {
 	char *script;
 	GList **servers;
 	GList **excludes;
+	GList *domains;
+};
+
+struct proxy_domain {
+	char *domain;
+	int proto;
+	union {
+		struct in_addr ip4;
+		struct in6_addr ip6;
+	} addr;
+	int mask;
 };
 
 static GList *proxy_list = NULL;
@@ -77,6 +91,15 @@ struct pacrunner_proxy *pacrunner_proxy_ref(struct pacrunner_proxy *proxy)
 	return proxy;
 }
 
+static void proxy_domain_destroy(gpointer data)
+{
+	struct proxy_domain *domain = data;
+	g_return_if_fail(domain != NULL);
+
+	g_free(domain->domain);
+	g_free(domain);
+}
+
 static void reset_proxy(struct pacrunner_proxy *proxy)
 {
 	DBG("proxy %p", proxy);
@@ -92,6 +115,10 @@ static void reset_proxy(struct pacrunner_proxy *proxy)
 
 	__pacrunner_manual_destroy_excludes(proxy->excludes);
 	proxy->excludes = NULL;
+
+	if (proxy->domains)
+		g_list_free_full(proxy->domains, proxy_domain_destroy);
+	proxy->domains = NULL;
 }
 
 void pacrunner_proxy_unref(struct pacrunner_proxy *proxy)
@@ -128,6 +155,76 @@ const char *pacrunner_proxy_get_script(struct pacrunner_proxy *proxy)
 		return NULL;
 
 	return proxy->script;
+}
+
+int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy, char **domains)
+{
+	int len;
+	char *slash, **domain;
+	char ip[INET6_ADDRSTRLEN + 1];
+
+	DBG("proxy %p domains %p", proxy, domains);
+
+	if (!proxy)
+		return -EINVAL;
+
+	if (!domains)
+		return -EINVAL;
+
+	for (domain = domains; *domain; domain++) {
+		struct proxy_domain *data;
+
+		data = g_malloc0(sizeof(struct proxy_domain));
+
+		slash = strchr(*domain, '/');
+		if (!slash) {
+			data->domain = g_strdup(*domain);
+			data->proto = 0;
+
+			proxy->domains = g_list_append(proxy->domains, data);
+			continue;
+		}
+
+		len = slash - *domain;
+		if (len > INET6_ADDRSTRLEN) {
+			g_free(data);
+			continue;
+		}
+
+		strncpy(ip, *domain, len);
+		ip[len] = '\0';
+
+		if (inet_pton(AF_INET, ip, &(data->addr.ip4)) == 1) {
+			data->domain = NULL;
+			data->proto = 4;
+
+			errno = 0;
+			data->mask = strtol(slash + 1, NULL, 10);
+			if (errno || data->mask < 0 || data->mask > 32) {
+				g_free(data);
+				continue;
+			}
+
+			proxy->domains = g_list_append(proxy->domains, data);
+		} else if (inet_pton(AF_INET6, ip, &(data->addr.ip6)) == 1) {
+			data->domain = NULL;
+			data->proto = 6;
+
+			errno = 0;
+			data->mask = strtol(slash + 1, NULL, 10);
+			if (errno || data->mask < 0 || data->mask > 128) {
+				g_free(data);
+				continue;
+			}
+
+			proxy->domains = g_list_append(proxy->domains, data);
+		} else {
+			g_free(data);
+			continue;
+		}
+	}
+
+	return 0;
 }
 
 static int set_method(struct pacrunner_proxy *proxy,
@@ -324,10 +421,61 @@ int pacrunner_proxy_disable(struct pacrunner_proxy *proxy)
 	return 0;
 }
 
+static int compare_legacy_ip_in_net(struct in_addr *host,
+					struct proxy_domain *match)
+{
+	if (ntohl(host->s_addr ^ match->addr.ip4.s_addr) >> (32 - match->mask))
+		return -1;
+
+	return 0;
+}
+
+static int compare_ipv6_in_net(struct in6_addr *host,
+					struct proxy_domain *match)
+{
+	int i, shift;
+
+	for (i = 0; i < (match->mask)/8; i++) {
+		if (host->s6_addr[i] != match->addr.ip6.s6_addr[i])
+			return -1;
+	}
+
+	if ((match->mask) % 8) {
+		/**
+		 * If mask bits are not multiple of 8 , 1-7 bits are left
+		 * to be compared.
+		 */
+		shift = 8 - (match->mask - (i*8));
+
+		if ((host->s6_addr[i] >> shift) !=
+			(match->addr.ip6.s6_addr[i] >> shift))
+			return -1;
+	}
+
+	return 0;
+}
+
+static int compare_host_in_domain(const char *host, struct proxy_domain *match)
+{
+	size_t hlen = strlen(host);
+	size_t dlen = strlen(match->domain);
+
+	if ((hlen >= dlen) && (strcmp(host + (hlen - dlen),
+						match->domain) == 0)) {
+		if (hlen == dlen || host[hlen - dlen - 1] == '.')
+			return 0;
+	}
+
+	return -1;
+}
+
 char *pacrunner_proxy_lookup(const char *url, const char *host)
 {
-	GList *list;
-	struct pacrunner_proxy *selected_proxy = NULL;
+	GList *l, *list;
+	struct in_addr ip4_addr;
+	struct in6_addr ip6_addr;
+	struct pacrunner_proxy *selected_proxy = NULL, *default_proxy = NULL;
+	int protocol = 0;
 
 	DBG("url %s host %s", url, host);
 
@@ -340,17 +488,67 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 		return NULL;
 	}
 
+	if (inet_pton(AF_INET, host, &ip4_addr) == 1) {
+		protocol = 4;
+	} else if (inet_pton(AF_INET6, host, &ip6_addr) == 1) {
+		protocol = 6;
+	} else if (host[0] == '[') {
+		char ip[INET6_ADDRSTRLEN + 1];
+		int len = strlen(host);
+
+		if (len < INET6_ADDRSTRLEN + 2 && host[len - 1] == ']') {
+			strncpy(ip, host + 1, len - 2);
+			ip[len - 2] = '\0';
+
+			if (inet_pton(AF_INET6, ip, &ip6_addr) == 1)
+				protocol = 6;
+		}
+	}
+
 	for (list = g_list_first(proxy_list); list; list = g_list_next(list)) {
 		struct pacrunner_proxy *proxy = list->data;
 
-		if (proxy->method == PACRUNNER_PROXY_METHOD_MANUAL ||
-				proxy->method == PACRUNNER_PROXY_METHOD_AUTO) {
-			selected_proxy = proxy;
-			break;
-		} else if (proxy->method == PACRUNNER_PROXY_METHOD_DIRECT)
-			selected_proxy = proxy;
+		if (!proxy->domains) {
+			if (!default_proxy)
+				default_proxy = proxy;
+			continue;
+		}
+
+		for (l = g_list_first(proxy->domains); l; l = g_list_next(l)) {
+			struct proxy_domain *data = l->data;
+
+			if (data->proto != protocol)
+				continue;
+
+			switch (protocol) {
+			case 4:
+				if (compare_legacy_ip_in_net(&ip4_addr,
+								data) == 0) {
+					selected_proxy = proxy;
+					goto found;
+				}
+				break;
+			case 6:
+				if (compare_ipv6_in_net(&ip6_addr,
+							data) == 0) {
+					selected_proxy = proxy;
+					goto found;
+				}
+				break;
+			default:
+				if (compare_host_in_domain(host, data) == 0) {
+					selected_proxy = proxy;
+					goto found;
+				}
+				break;
+			}
+		}
 	}
 
+	if (!selected_proxy)
+		selected_proxy = default_proxy;
+
+found:
 	pthread_mutex_unlock(&proxy_mutex);
 
 	if (!selected_proxy)

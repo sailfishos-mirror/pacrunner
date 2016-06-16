@@ -63,6 +63,8 @@ void pacrunner_proxy_unref(struct pacrunner_proxy *proxy);
 const char *pacrunner_proxy_get_interface(struct pacrunner_proxy *proxy);
 const char *pacrunner_proxy_get_script(struct pacrunner_proxy *proxy);
 
+int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy,
+					char **domains);
 int pacrunner_proxy_set_direct(struct pacrunner_proxy *proxy);
 int pacrunner_proxy_set_manual(struct pacrunner_proxy *proxy,
 					char **servers, char **excludes);
