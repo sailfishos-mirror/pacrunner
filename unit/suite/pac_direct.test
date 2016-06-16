@@ -11,6 +11,8 @@ function FindProxyForURL(url, host)
 
 [excludes]
 
+[domains]
+
 [config]
 VALID
 

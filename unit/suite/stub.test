@@ -11,6 +11,9 @@ Stub suite file
 [excludes]
 # If so, optional exlusion rules can be written here
 
+[domains]
+# List of domains are here
+
 [config]
 # Result of the configuration: VALID or INVALID
 

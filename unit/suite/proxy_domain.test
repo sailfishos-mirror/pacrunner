@@ -1,0 +1,37 @@
+[title]
+Proxy Domain lookup
+
+[pac]
+
+[servers]
+http://proxy.suite.com
+
+[excludes]
+
+[domains]
+suite.com
+test.suite.com
+172.132.231.6/24
+
+[config]
+VALID
+
+[tests]
+http://foo.suite.com foo.suite.com
+PROXY proxy.suite.com
+http://172.132.231.101/search=?true 172.132.231.101
+PROXY proxy.suite.com
+http://111.121.131.141/page1 111.121.131.141
+DIRECT
+http://notintel.com notintel.com
+DIRECT
+http://intel.com intel.com
+PROXY proxy2.com; PROXY secproxy2.com
+https://bar.domain2.com bar.domain2.com
+PROXY secproxy2.com; PROXY proxy2.com
+http://192.168.4.4/index.html 192.168.4.4
+PROXY proxy2.com; PROXY secproxy2.com
+socks4://baz.domain3.com/xyz baz.domain3.com
+SOCKS4 sockproxy3.com; PROXY proxy3.com
+http://[fe80:96db:12ce::43ef]/ip6.mp4 [fe80:96db:12ce::43ef]
+PROXY proxy3.com; SOCKS4 sockproxy3.com

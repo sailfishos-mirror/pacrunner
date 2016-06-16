@@ -42,9 +42,10 @@ enum test_suite_part {
 	SUITE_PAC      = 1,
 	SUITE_SERVERS  = 2,
 	SUITE_EXCLUDES = 3,
-	SUITE_CONFIG   = 4,
-	SUITE_TESTS    = 5,
-	SUITE_NOTHING  = 6,
+	SUITE_DOMAINS  = 4,
+	SUITE_CONFIG   = 5,
+	SUITE_TESTS    = 6,
+	SUITE_NOTHING  = 7,
 };
 
 enum cu_test_mode {
@@ -58,6 +59,7 @@ struct pacrunner_test_suite {
 	gchar *pac;
 	gchar **servers;
 	gchar **excludes;
+	gchar **domains;
 
 	bool config_result;
 
@@ -67,7 +69,7 @@ struct pacrunner_test_suite {
 static struct pacrunner_test_suite *test_suite;
 static bool verbose = false;
 
-static struct pacrunner_proxy *proxy;
+static struct pacrunner_proxy *proxy, *proxy2 = NULL, *proxy3 = NULL;
 static bool test_config;
 
 static void free_pacrunner_test_suite(struct pacrunner_test_suite *suite)
@@ -79,6 +81,7 @@ static void free_pacrunner_test_suite(struct pacrunner_test_suite *suite)
 	g_free(suite->pac);
 	g_strfreev(suite->servers);
 	g_strfreev(suite->excludes);
+	g_strfreev(suite->domains);
 	g_strfreev(suite->tests);
 
 	g_free(suite);
@@ -138,6 +141,13 @@ static void print_test_suite(struct pacrunner_test_suite *suite)
 	printf("\nExcludes:\n");
 	if (suite->excludes) {
 		for (line = suite->excludes; *line; line++)
+			printf("%s\n", *line);
+	} else
+		printf("(none)\n");
+
+	printf("\nDomains:\n");
+	if (suite->domains) {
+		for (line = suite->domains; *line; line++)
 			printf("%s\n", *line);
 	} else
 		printf("(none)\n");
@@ -240,6 +250,15 @@ static struct pacrunner_test_suite *read_test_suite(const char *path)
 				suite->excludes = array;
 
 				break;
+			case SUITE_DOMAINS:
+				array = _g_strappendv(suite->domains, *line);
+				if (!array)
+					goto error;
+
+				g_free(suite->domains);
+				suite->domains = array;
+
+				break;
 			case SUITE_CONFIG:
 				if (strncmp(*line, "VALID", 5) == 0)
 					suite->config_result = true;
@@ -272,6 +291,8 @@ static struct pacrunner_test_suite *read_test_suite(const char *path)
 			part = SUITE_SERVERS;
 		else if (strncmp(*line, "[excludes]", 10) == 0)
 			part = SUITE_EXCLUDES;
+		else if (strncmp(*line, "[domains]", 9) == 0)
+			part = SUITE_DOMAINS;
 		else if (strncmp(*line, "[config]", 8) == 0)
 			part = SUITE_CONFIG;
 		else if (strncmp(*line, "[tests]", 7) == 0)
@@ -336,6 +357,54 @@ static void test_manual_config(void)
 		test_config = true;
 
 	CU_ASSERT_TRUE(test_suite->config_result == test_config);
+}
+
+static void test_proxy_domain(void)
+{
+	int val = 0;
+
+	if (pacrunner_proxy_set_domains(proxy, test_suite->domains) != 0)
+		val = -1;
+
+	proxy2 = pacrunner_proxy_create("eth1");
+	if (proxy2) {
+		char *servers[] = {
+			"http://proxy2.com",
+			"https://secproxy2.com",
+			NULL};
+		char *domains[] = {
+			"intel.com",
+			"domain2.com",
+			"192.168.4.0/16",
+			NULL};
+
+		if (pacrunner_proxy_set_manual(proxy2, servers, NULL) != 0)
+			val = -1;
+
+		if (pacrunner_proxy_set_domains(proxy2, domains) != 0)
+			val = -1;
+	}
+
+	proxy3 = pacrunner_proxy_create("wl0");
+	if (proxy3) {
+		char *servers[] = {
+			"http://proxy3.com",
+			"socks4://sockproxy3.com",
+			NULL};
+		char *domains[] = {
+			"redhat.com",
+			"domain3.com",
+			"fe80:96db::/32",
+			NULL};
+
+		if (pacrunner_proxy_set_manual(proxy3, servers, NULL) != 0)
+			val = -1;
+
+		if (pacrunner_proxy_set_domains(proxy3, domains) != 0)
+			val = -1;
+	}
+
+	CU_ASSERT_TRUE(val == 0);
 }
 
 static void test_proxy_requests(void)
@@ -430,11 +499,20 @@ static void run_test_suite(const char *test_file_path, enum cu_test_mode mode)
 		CU_add_test(cu_suite, "Manual config test",
 						test_manual_config);
 
+	if (test_suite->domains)
+		CU_add_test(cu_suite, "Proxy domain test",
+						test_proxy_domain);
+
 	if (test_suite->config_result && test_suite->tests)
 		CU_add_test(cu_suite, "Proxy requests test",
 						test_proxy_requests);
 
 	test_config = false;
+
+	if (test_suite->domains) {
+		pacrunner_proxy_unref(proxy2);
+		pacrunner_proxy_unref(proxy3);
+	}
 
 	switch (mode) {
 	case CU_MODE_BASIC:
