@@ -62,7 +62,10 @@ Methods		object CreateProxyConfiguration(dict settings)
 
 			array{string} Domains [optional]
 
-				Domain names for which the URL is valid.
+				Domain names and IP range for which this proxy
+				configuration shall be valid. IP range should
+				be in CIDR format. eg:"192.168.1.0/12" for IPv4
+				and similarly for IPv6.
 
 			array{string} Nameservers [optional]
 
