@@ -128,6 +128,8 @@ void pacrunner_proxy_unref(struct pacrunner_proxy *proxy)
 	if (!g_atomic_int_dec_and_test(&proxy->refcount))
 		return;
 
+	__pacrunner_js_clear_proxy(proxy);
+
 	reset_proxy(proxy);
 
 	g_list_free_full(proxy->domains, proxy_domain_destroy);

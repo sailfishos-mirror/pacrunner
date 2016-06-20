@@ -27,6 +27,7 @@ struct pacrunner_js_driver {
 	const char *name;
 	int priority;
 	int (*set_proxy) (struct pacrunner_proxy *proxy);
+	int (*clear_proxy) (struct pacrunner_proxy *proxy);
 	char *(*execute)(struct pacrunner_proxy *proxy, const char *url,
 			 const char *host);
 };

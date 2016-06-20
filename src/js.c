@@ -69,6 +69,22 @@ int __pacrunner_js_set_proxy(struct pacrunner_proxy *proxy)
 	return -ENXIO;
 }
 
+int __pacrunner_js_clear_proxy(struct pacrunner_proxy *proxy)
+{
+	GSList *list;
+
+	for (list = js_driver_list; list; list = list->next) {
+		struct pacrunner_js_driver *driver = list->data;
+
+		if (driver->clear_proxy)
+			return driver->clear_proxy(proxy);
+		else
+			return 0;
+	}
+
+	return -ENXIO;
+}
+
 char *__pacrunner_js_execute(struct pacrunner_proxy *proxy, const char *url,
 			     const char *host)
 {

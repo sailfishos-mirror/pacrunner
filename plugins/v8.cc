@@ -302,6 +302,7 @@ static struct pacrunner_js_driver v8_driver = {
 	"v8",
 	PACRUNNER_JS_PRIORITY_HIGH,
 	v8_set_proxy,
+	NULL,
 	v8_execute,
 };
 
