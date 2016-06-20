@@ -181,6 +181,8 @@ int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy, char **domains)
 
 		data = g_malloc0(sizeof(struct proxy_domain));
 
+		DBG("proxy %p domain %s", proxy, *domain);
+
 		slash = strchr(*domain, '/');
 		if (!slash) {
 			data->domain = g_strdup(*domain);
@@ -530,6 +532,8 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 				if (compare_legacy_ip_in_net(&ip4_addr,
 								data) == 0) {
 					selected_proxy = proxy;
+					DBG("match proxy %p Legacy IP range %s",
+					    proxy, data->domain);
 					goto found;
 				}
 				break;
@@ -537,12 +541,16 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 				if (compare_ipv6_in_net(&ip6_addr,
 							data) == 0) {
 					selected_proxy = proxy;
+					DBG("match proxy %p IPv6 range %s",
+					    proxy, data->domain);
 					goto found;
 				}
 				break;
 			default:
 				if (compare_host_in_domain(host, data) == 0) {
 					selected_proxy = proxy;
+					DBG("match proxy %p DNS domain %s",
+					    proxy, data->domain);
 					goto found;
 				}
 				break;
@@ -550,8 +558,10 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 		}
 	}
 
-	if (!selected_proxy)
+	if (!selected_proxy) {
+		DBG("default proxy %p", default_proxy);
 		selected_proxy = default_proxy;
+	}
 
 found:
 	pthread_mutex_unlock(&proxy_mutex);
