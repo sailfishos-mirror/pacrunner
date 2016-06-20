@@ -97,7 +97,7 @@ static void test_single_execute_without_pac(void)
 
 	g_assert(mozjs_init() == 0);
 
-	result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+	result = __pacrunner_js_execute(proxy, EXAMPLE_URL, EXAMPLE_HOST);
 	g_test_message("result: %s", result);
 
 	mozjs_exit();
@@ -111,7 +111,8 @@ static void test_multiple_execute_without_pac(void)
 	g_assert(mozjs_init() == 0);
 
 	for (i = 0; i < MULTIPLE_COUNT; i++) {
-		result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
+						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
 	}
 
@@ -126,7 +127,7 @@ static void test_single_execute_with_direct_pac(void)
 
 	g_assert(pacrunner_proxy_set_auto(proxy, NULL, DIRECT_PAC) == 0);
 
-	result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+	result = __pacrunner_js_execute(proxy, EXAMPLE_URL, EXAMPLE_HOST);
 	g_test_message("result: %s", result);
 
 	pacrunner_proxy_disable(proxy);
@@ -144,7 +145,8 @@ static void test_multiple_execute_with_direct_pac(void)
 	g_assert(pacrunner_proxy_set_auto(proxy, NULL, DIRECT_PAC) == 0);
 
 	for (i = 0; i < MULTIPLE_COUNT; i++) {
-		result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
+						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
 	}
 
@@ -163,7 +165,8 @@ static void test_massive_execute_with_direct_pac(void)
 	g_assert(pacrunner_proxy_set_auto(proxy, NULL, DIRECT_PAC) == 0);
 
 	for (i = 0; i < MASSIVE_COUNT; i++) {
-		result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
+						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
 	}
 
@@ -182,7 +185,8 @@ static void test_multiple_execute_with_example_pac(void)
 	g_assert(pacrunner_proxy_set_auto(proxy, NULL, EXAMPLE_PAC) == 0);
 
 	for (i = 0; i < MULTIPLE_COUNT; i++) {
-		result = __pacrunner_js_execute(EXAMPLE_URL, EXAMPLE_HOST);
+		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
+						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
 	}
 

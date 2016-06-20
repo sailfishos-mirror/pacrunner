@@ -565,7 +565,7 @@ found:
 						selected_proxy->servers,
 						selected_proxy->excludes);
 	case PACRUNNER_PROXY_METHOD_AUTO:
-		return __pacrunner_js_execute(url, host);
+		return __pacrunner_js_execute(selected_proxy, url, host);
 	}
 
 	return NULL;

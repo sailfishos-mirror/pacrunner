@@ -251,11 +251,15 @@ static int v8_set_proxy(struct pacrunner_proxy *proxy)
 }
 
 
-static char *v8_execute(const char *url, const char *host)
+static char *v8_execute(struct pacrunner_proxy *proxy, const char *url,
+			const char *host)
 {
-	v8::Locker lck;
+	DBG("proxy %p url %s host %s", proxy, url, host);
 
-	DBG("url %s host %s", url, host);
+	if (current_proxy != proxy && v8_set_proxy(proxy))
+		return NULL;
+
+	v8::Locker lck;
 
 	if (jsctx.IsEmpty() || jsfn.IsEmpty())
 		return NULL;

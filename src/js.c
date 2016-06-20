@@ -69,7 +69,8 @@ int __pacrunner_js_set_proxy(struct pacrunner_proxy *proxy)
 	return -ENXIO;
 }
 
-char *__pacrunner_js_execute(const char *url, const char *host)
+char *__pacrunner_js_execute(struct pacrunner_proxy *proxy, const char *url,
+			     const char *host)
 {
 	GSList *list;
 
@@ -77,7 +78,7 @@ char *__pacrunner_js_execute(const char *url, const char *host)
 		struct pacrunner_js_driver *driver = list->data;
 
 		if (driver->execute)
-			return driver->execute(url, host);
+			return driver->execute(proxy, url, host);
 	}
 
 	return NULL;

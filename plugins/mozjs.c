@@ -222,15 +222,19 @@ static int mozjs_set_proxy(struct pacrunner_proxy *proxy)
 	return 0;
 }
 
-static char * mozjs_execute(const char *url, const char *host)
+static char * mozjs_execute(struct pacrunner_proxy *proxy, const char *url,
+			    const char *host)
 {
 	JSBool result;
 	jsval rval, args[2];
 	char *answer, *g_answer;
 
-	DBG("url %s host %s", url, host);
+	DBG("proxy %p url %s host %s", proxy, url, host);
 
 	if (!jsctx)
+		return NULL;
+
+	if (proxy != current_proxy && mozjs_set_proxy(proxy))
 		return NULL;
 
 	pthread_mutex_lock(&mozjs_mutex);

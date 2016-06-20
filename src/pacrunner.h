@@ -110,4 +110,5 @@ char *__pacrunner_mozjs_execute(const char *url, const char *host);
 int __pacrunner_js_init(void);
 void __pacrunner_js_cleanup(void);
 int __pacrunner_js_set_proxy(struct pacrunner_proxy *proxy);
-char *__pacrunner_js_execute(const char *url, const char *host);
+char *__pacrunner_js_execute(struct pacrunner_proxy *proxy, const char *url,
+			     const char *host);
