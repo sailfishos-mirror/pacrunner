@@ -41,6 +41,7 @@ struct pacrunner_proxy {
 	GList **servers;
 	GList **excludes;
 	GList *domains;
+	void *jsctx;
 };
 
 struct proxy_domain {
@@ -582,6 +583,16 @@ static gboolean proxy_config_timeout(gpointer user_data)
 		pthread_cond_broadcast(&proxy_cond);
 	}
 	return FALSE;
+}
+
+void __pacrunner_proxy_set_jsctx(struct pacrunner_proxy *proxy, void *jsctx)
+{
+	proxy->jsctx = jsctx;
+}
+
+void *__pacrunner_proxy_get_jsctx(struct pacrunner_proxy *proxy)
+{
+	return proxy->jsctx;
 }
 
 int __pacrunner_proxy_init(void)

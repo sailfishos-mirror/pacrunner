@@ -76,6 +76,9 @@ int pacrunner_proxy_disable(struct pacrunner_proxy *proxy);
 
 char *pacrunner_proxy_lookup(const char *url, const char *host);
 
+void __pacrunner_proxy_set_jsctx(struct pacrunner_proxy *proxy, void *jsctx);
+void *__pacrunner_proxy_get_jsctx(struct pacrunner_proxy *proxy);
+
 int __pacrunner_proxy_init(void);
 void __pacrunner_proxy_cleanup(void);
 
