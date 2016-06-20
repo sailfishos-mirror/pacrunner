@@ -44,7 +44,11 @@
 
 static pthread_mutex_t mozjs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static struct pacrunner_proxy *current_proxy = NULL;
+struct pacrunner_mozjs {
+	struct pacrunner_proxy *proxy;
+	JSContext *jsctx;
+	JSObject *jsobj;
+};
 
 static int getaddr(const char *node, char *host, size_t hostlen)
 {
@@ -91,19 +95,20 @@ static int resolve(const char *node, char *host, size_t hostlen)
 	return 0;
 }
 
-static JSBool myipaddress(JSContext *ctx, uintN argc, jsval *vp)
+static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 {
+	struct pacrunner_mozjs *ctx = JS_GetContextPrivate(jsctx);
 	const char *interface;
 	char address[NI_MAXHOST];
 
 	DBG("");
 
-	JS_SET_RVAL(ctx, vp, JSVAL_NULL);
+	JS_SET_RVAL(jsctx, vp, JSVAL_NULL);
 
-	if (!current_proxy)
+	if (!ctx)
 		return JS_TRUE;
 
-	interface = pacrunner_proxy_get_interface(current_proxy);
+	interface = pacrunner_proxy_get_interface(ctx->proxy);
 	if (!interface)
 		return JS_TRUE;
 
@@ -112,7 +117,8 @@ static JSBool myipaddress(JSContext *ctx, uintN argc, jsval *vp)
 
 	DBG("address %s", address);
 
-	JS_SET_RVAL(ctx, vp, STRING_TO_JSVAL(JS_NewStringCopyZ(ctx, address)));
+	JS_SET_RVAL(jsctx, vp, STRING_TO_JSVAL(JS_NewStringCopyZ(jsctx,
+							       address)));
 
 	return JS_TRUE;
 }
@@ -160,103 +166,113 @@ static JSClass jscls = {
 };
 
 static JSRuntime *jsrun;
-static JSContext *jsctx = NULL;
-static JSObject *jsobj = NULL;
 
-static void create_object(void)
+static int create_object(struct pacrunner_proxy *proxy)
 {
+	struct pacrunner_mozjs *ctx;
 	const char *script;
 	jsval rval;
 
-	if (!current_proxy)
-		return;
-
-	script = pacrunner_proxy_get_script(current_proxy);
+	script = pacrunner_proxy_get_script(proxy);
 	if (!script)
-		return;
+		return 0;
 
-	jsctx = JS_NewContext(jsrun, 8 * 1024);
+	ctx = g_malloc0(sizeof(struct pacrunner_mozjs));
+
+	ctx->proxy = proxy;
+	ctx->jsctx = JS_NewContext(jsrun, 8 * 1024);
+	if (!ctx->jsctx) {
+		g_free(ctx);
+		return -ENOMEM;
+	}
+	JS_SetContextPrivate(ctx->jsctx, ctx);
+	__pacrunner_proxy_set_jsctx(proxy, ctx);
 
 #if JS_VERSION >= 185
-	jsobj = JS_NewCompartmentAndGlobalObject(jsctx, &jscls, NULL);
+	ctx->jsobj = JS_NewCompartmentAndGlobalObject(ctx->jsctx, &jscls,
+						      NULL);
 #else
-	jsobj = JS_NewObject(jsctx, &jscls, NULL, NULL);
+	ctx->jsobj = JS_NewObject(ctx->jsctx, &jscls, NULL, NULL);
 #endif
 
-	if (!JS_InitStandardClasses(jsctx, jsobj))
+	if (!JS_InitStandardClasses(ctx->jsctx, ctx->jsobj))
 		pacrunner_error("Failed to init JS standard classes");
 
-	JS_DefineFunction(jsctx, jsobj, "myIpAddress", myipaddress, 0, 0);
-	JS_DefineFunction(jsctx, jsobj, "dnsResolve", dnsresolve, 1, 0);
+	JS_DefineFunction(ctx->jsctx, ctx->jsobj, "myIpAddress",
+			  myipaddress, 0, 0);
+	JS_DefineFunction(ctx->jsctx, ctx->jsobj,
+			  "dnsResolve", dnsresolve, 1, 0);
 
-	JS_EvaluateScript(jsctx, jsobj, JAVASCRIPT_ROUTINES,
-				strlen(JAVASCRIPT_ROUTINES), NULL, 0, &rval);
+	JS_EvaluateScript(ctx->jsctx, ctx->jsobj, JAVASCRIPT_ROUTINES,
+			  strlen(JAVASCRIPT_ROUTINES), NULL, 0, &rval);
 
-	JS_EvaluateScript(jsctx, jsobj, script, strlen(script),
-						"wpad.dat", 0, &rval);
+	JS_EvaluateScript(ctx->jsctx, ctx->jsobj, script, strlen(script),
+			  "wpad.dat", 0, &rval);
+
+	return 0;
 }
 
-static void destroy_object(void)
+static int mozjs_clear_proxy(struct pacrunner_proxy *proxy)
 {
-	if (!jsctx)
-		return;
+	struct pacrunner_mozjs *ctx = __pacrunner_proxy_get_jsctx(proxy);
 
-	JS_DestroyContext(jsctx);
-	jsctx = NULL;
+	DBG("proxy %p ctx %p", proxy, ctx);
 
-	jsobj = NULL;
+	if (!ctx)
+		return -EINVAL;
+
+	JS_DestroyContext(ctx->jsctx);
+	__pacrunner_proxy_set_jsctx(proxy, NULL);
+
+	return 0;
 }
 
 static int mozjs_set_proxy(struct pacrunner_proxy *proxy)
 {
 	DBG("proxy %p", proxy);
 
-	if (current_proxy)
-		destroy_object();
+	if (!proxy)
+		return 0;
 
-	current_proxy = proxy;
+	mozjs_clear_proxy(proxy);
 
-	if (current_proxy)
-		create_object();
-
-	return 0;
+	return create_object(proxy);
 }
 
 static char * mozjs_execute(struct pacrunner_proxy *proxy, const char *url,
 			    const char *host)
 {
+	struct pacrunner_mozjs *ctx = __pacrunner_proxy_get_jsctx(proxy);
 	JSBool result;
 	jsval rval, args[2];
 	char *answer, *g_answer;
 
-	DBG("proxy %p url %s host %s", proxy, url, host);
+	DBG("proxy %p ctx %p url %s host %s", proxy, ctx, url, host);
 
-	if (!jsctx)
-		return NULL;
-
-	if (proxy != current_proxy && mozjs_set_proxy(proxy))
+	if (!ctx)
 		return NULL;
 
 	pthread_mutex_lock(&mozjs_mutex);
 
-	JS_BeginRequest(jsctx);
+	JS_BeginRequest(ctx->jsctx);
 
-	args[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(jsctx, url));
-	args[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(jsctx, host));
+	args[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(ctx->jsctx, url));
+	args[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(ctx->jsctx, host));
 
-	result = JS_CallFunctionName(jsctx, jsobj, "FindProxyForURL",
-							2, args, &rval);
+	result = JS_CallFunctionName(ctx->jsctx, ctx->jsobj,
+				     "FindProxyForURL", 2, args, &rval);
 
-	JS_EndRequest(jsctx);
+	JS_EndRequest(ctx->jsctx);
 
-	JS_MaybeGC(jsctx);
+	JS_MaybeGC(ctx->jsctx);
 
 	pthread_mutex_unlock(&mozjs_mutex);
 
 	if (result) {
-		answer = JS_EncodeString(jsctx, JS_ValueToString(jsctx, rval));
+		answer = JS_EncodeString(ctx->jsctx,
+					 JS_ValueToString(ctx->jsctx, rval));
 		g_answer = g_strdup(answer);
-		JS_free(jsctx, answer);
+		JS_free(ctx->jsctx, answer);
 		return g_answer;
 	}
 
@@ -267,6 +283,7 @@ static struct pacrunner_js_driver mozjs_driver = {
 	.name		= "mozjs",
 	.priority	= PACRUNNER_JS_PRIORITY_DEFAULT,
 	.set_proxy	= mozjs_set_proxy,
+	.clear_proxy	= mozjs_clear_proxy,
 	.execute	= mozjs_execute,
 };
 
@@ -284,8 +301,6 @@ static void mozjs_exit(void)
 	DBG("");
 
 	pacrunner_js_driver_unregister(&mozjs_driver);
-
-	mozjs_set_proxy(NULL);
 
 	JS_DestroyRuntime(jsrun);
 }
