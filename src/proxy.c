@@ -115,10 +115,6 @@ static void reset_proxy(struct pacrunner_proxy *proxy)
 
 	__pacrunner_manual_destroy_excludes(proxy->excludes);
 	proxy->excludes = NULL;
-
-	if (proxy->domains)
-		g_list_free_full(proxy->domains, proxy_domain_destroy);
-	proxy->domains = NULL;
 }
 
 void pacrunner_proxy_unref(struct pacrunner_proxy *proxy)
@@ -132,6 +128,9 @@ void pacrunner_proxy_unref(struct pacrunner_proxy *proxy)
 		return;
 
 	reset_proxy(proxy);
+
+	g_list_free_full(proxy->domains, proxy_domain_destroy);
+	proxy->domains = NULL;
 
 	g_free(proxy->interface);
 	g_free(proxy);
@@ -168,8 +167,11 @@ int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy, char **domains)
 	if (!proxy)
 		return -EINVAL;
 
+	g_list_free_full(proxy->domains, proxy_domain_destroy);
+	proxy->domains = NULL;
+
 	if (!domains)
-		return -EINVAL;
+		return 0;
 
 	for (domain = domains; *domain; domain++) {
 		struct proxy_domain *data;
