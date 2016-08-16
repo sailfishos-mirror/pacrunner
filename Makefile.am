@@ -27,6 +27,7 @@ builtin_libadd += @CURL_LIBS@
 endif
 
 if MOZJS
+js_sources = src/js_funcs.c
 builtin_modules += mozjs
 builtin_sources += plugins/mozjs.c
 builtin_cflags += @MOZJS_CFLAGS@
@@ -34,6 +35,7 @@ builtin_libadd += @MOZJS_LIBS@
 endif
 
 if V8
+js_sources = src/js_funcs.c
 builtin_modules += v8
 builtin_sources += plugins/v8.cc
 builtin_libadd += @V8_LIBS@
@@ -41,12 +43,12 @@ endif
 
 sbin_PROGRAMS = src/pacrunner
 
-src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) \
+src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
 			src/main.c src/pacrunner.h \
 			src/log.h src/log.c src/plugin.h src/plugin.c \
 			src/download.h src/download.c \
 			src/client.c src/manager.c src/proxy.c \
-			src/manual.c src/js.h src/js.c src/javascript.h
+			src/manual.c src/js.h src/js.c
 
 src_pacrunner_LDADD = $(builtin_libadd) @GLIB_LIBS@ @PTHREAD_LIBS@ \
 							@DBUS_LIBS@ -ldl
@@ -97,7 +99,7 @@ noinst_PROGRAMS = unit/test-pacrunner
 
 unit_test_pacrunner_SOURCES = unit/test-pacrunner.c src/pacrunner.h \
 			src/proxy.c src/manual.c src/download.c \
-			src/js.c src/log.c src/plugin.c
+			src/js.c src/log.c src/plugin.c $(js_sources)
 
 unit_test_pacrunner_LDADD = @GLIB_LIBS@ -ldl
 
@@ -118,7 +120,7 @@ noinst_PROGRAMS += unit/test-mozjs
 
 unit_test_mozjs_SOURCES = unit/test-mozjs.c src/pacrunner.h \
 			src/proxy.c src/manual.c src/download.c \
-				src/js.c plugins/mozjs.c
+				src/js.c plugins/mozjs.c $(js_sources)
 
 unit_test_mozjs_LDADD = @MOZJS_LIBS@ @GLIB_LIBS@ @PTHREAD_LIBS@
 endif

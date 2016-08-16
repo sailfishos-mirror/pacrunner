@@ -34,7 +34,6 @@
 #include <linux/if_arp.h>
 
 #include <v8.h>
-#include "javascript.h"
 
 extern "C" {
 #include "pacrunner.h"
@@ -175,7 +174,7 @@ static void create_object(void)
 	v8::Handle<v8::Script> script_scr;
 	v8::Handle<v8::Value> result;
 
-	script_scr = v8::Script::Compile(v8::String::New(JAVASCRIPT_ROUTINES));
+	script_scr = v8::Script::Compile(v8::String::New(__pacrunner_js_routines));
 	if (script_scr.IsEmpty()) {
 		v8::String::Utf8Value err(exc.Exception());
 		DBG("Javascript failed to compile: %s", *err);

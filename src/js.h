@@ -34,3 +34,6 @@ struct pacrunner_js_driver {
 
 int pacrunner_js_driver_register(struct pacrunner_js_driver *driver);
 void pacrunner_js_driver_unregister(struct pacrunner_js_driver *driver);
+
+/* Common functions for JS plugins */
+extern const char __pacrunner_js_routines[];

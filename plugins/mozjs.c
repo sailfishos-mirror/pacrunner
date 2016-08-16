@@ -37,8 +37,6 @@
 #include <jsapi.h>
 #pragma GCC diagnostic error "-Wredundant-decls"
 
-#include "javascript.h"
-
 #include "pacrunner.h"
 #include "js.h"
 
@@ -203,8 +201,8 @@ static int create_object(struct pacrunner_proxy *proxy)
 	JS_DefineFunction(ctx->jsctx, ctx->jsobj,
 			  "dnsResolve", dnsresolve, 1, 0);
 
-	JS_EvaluateScript(ctx->jsctx, ctx->jsobj, JAVASCRIPT_ROUTINES,
-			  strlen(JAVASCRIPT_ROUTINES), NULL, 0, &rval);
+	JS_EvaluateScript(ctx->jsctx, ctx->jsobj, __pacrunner_js_routines,
+			  strlen(__pacrunner_js_routines), NULL, 0, &rval);
 
 	JS_EvaluateScript(ctx->jsctx, ctx->jsobj, script, strlen(script),
 			  "wpad.dat", 0, &rval);
