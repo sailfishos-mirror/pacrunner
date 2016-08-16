@@ -69,6 +69,11 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 	fi
 ])
 
+AC_ARG_ENABLE(duktape, AC_HELP_STRING([--enable-duktape],
+		[enable Duktape Javascript plugin support]))
+
+AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
+
 AC_ARG_ENABLE(mozjs, AC_HELP_STRING([--enable-mozjs],
 		[enable Mozilla Javascript plugin support]))
 if (test "${enable_mozjs}" = "yes"); then

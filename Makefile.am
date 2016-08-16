@@ -41,6 +41,15 @@ builtin_sources += plugins/v8.cc
 builtin_libadd += @V8_LIBS@
 endif
 
+if DUKTAPE
+js_sources = src/js_funcs.c
+builtin_modules += duktape
+builtin_sources += plugins/duktape.c \
+			duktape/duk_config.h \
+			duktape/duktape.h \
+			duktape/duktape.c
+endif
+
 sbin_PROGRAMS = src/pacrunner
 
 src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
@@ -126,11 +135,13 @@ unit_test_mozjs_LDADD = @MOZJS_LIBS@ @GLIB_LIBS@ @PTHREAD_LIBS@
 endif
 
 if V8
-
 unit_test_pacrunner_SOURCES += plugins/v8.cc
 
 unit_test_pacrunner_LDADD += @V8_LIBS@
+endif
 
+if DUKTAPE
+unit_test_pacrunner_SOURCES += plugins/duktape.c duktape/duktape.c
 endif
 
 endif #UNIT
