@@ -23,6 +23,50 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
+
+#include <arpa/inet.h>
+#include <linux/if_arp.h>
+
+#include "pacrunner.h"
+#include "js.h"
+
+int __pacrunner_js_getipaddr(struct pacrunner_proxy *proxy, char *host,
+			     size_t hostlen)
+{
+	const char *interface;
+	struct sockaddr_in addr;
+	struct ifreq ifr;
+	int sk, err;
+
+	interface = pacrunner_proxy_get_interface(proxy);
+	if (!interface)
+		return -EINVAL;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return -EIO;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
+
+	err = ioctl(sk, SIOCGIFADDR, &ifr);
+
+	close(sk);
+
+	if (err < 0)
+		return -EIO;
+
+	memcpy(&addr, &ifr.ifr_addr, sizeof(addr));
+	snprintf(host, hostlen, "%s", inet_ntoa(addr.sin_addr));
+
+	return 0;
+}
+
 const char __pacrunner_js_routines[] =
 "function dnsDomainIs(host, domain) {\n" \
 "    return (host.length >= domain.length &&\n" \

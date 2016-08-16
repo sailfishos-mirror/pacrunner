@@ -27,11 +27,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/ioctl.h>
 
 #include <netdb.h>
-#include <arpa/inet.h>
-#include <linux/if_arp.h>
 
 #include <v8.h>
 
@@ -49,32 +46,6 @@ static gboolean v8_gc(gpointer user_data)
 {
 	v8::Locker lck;
 	return !v8::V8::IdleNotification();
-}
-
-static int getaddr(const char *node, char *host, size_t hostlen)
-{
-	struct sockaddr_in addr;
-	struct ifreq ifr;
-	int sk, err;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return -EIO;
-
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, node, sizeof(ifr.ifr_name));
-
-	err = ioctl(sk, SIOCGIFADDR, &ifr);
-
-	close(sk);
-
-	if (err < 0)
-		return -EIO;
-
-	memcpy(&addr, &ifr.ifr_addr, sizeof(addr));
-	snprintf(host, hostlen, "%s", inet_ntoa(addr.sin_addr));
-
-	return 0;
 }
 
 static int resolve(const char *node, char *host, size_t hostlen)
@@ -106,11 +77,7 @@ static v8::Handle<v8::Value> myipaddress(const v8::Arguments& args)
 	if (current_proxy == NULL)
 		return v8::ThrowException(v8::String::New("No current proxy"));
 
-	interface = pacrunner_proxy_get_interface(current_proxy);
-	if (interface == NULL)
-		return v8::ThrowException(v8::String::New("Error fetching interface"));
-
-	if (getaddr(interface, address, sizeof(address)) < 0)
+	if (__pacrunner_js_getipaddr(current_proxy, address, sizeof(address)) < 0)
 		return v8::ThrowException(v8::String::New("Error fetching IP address"));
 
 	DBG("address %s", address);

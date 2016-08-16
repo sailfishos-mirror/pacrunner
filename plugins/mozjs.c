@@ -26,12 +26,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <pthread.h>
 
 #include <netdb.h>
-#include <arpa/inet.h>
-#include <linux/if_arp.h>
 
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 #include <jsapi.h>
@@ -47,32 +44,6 @@ struct pacrunner_mozjs {
 	JSContext *jsctx;
 	JSObject *jsobj;
 };
-
-static int getaddr(const char *node, char *host, size_t hostlen)
-{
-	struct sockaddr_in addr;
-	struct ifreq ifr;
-	int sk, err;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return -EIO;
-
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, node, sizeof(ifr.ifr_name));
-
-	err = ioctl(sk, SIOCGIFADDR, &ifr);
-
-	close(sk);
-
-	if (err < 0)
-		return -EIO;
-
-	memcpy(&addr, &ifr.ifr_addr, sizeof(addr));
-	snprintf(host, hostlen, "%s", inet_ntoa(addr.sin_addr));
-
-	return 0;
-}
 
 static int resolve(const char *node, char *host, size_t hostlen)
 {
@@ -96,7 +67,6 @@ static int resolve(const char *node, char *host, size_t hostlen)
 static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 {
 	struct pacrunner_mozjs *ctx = JS_GetContextPrivate(jsctx);
-	const char *interface;
 	char address[NI_MAXHOST];
 
 	DBG("");
@@ -106,11 +76,7 @@ static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 	if (!ctx)
 		return JS_TRUE;
 
-	interface = pacrunner_proxy_get_interface(ctx->proxy);
-	if (!interface)
-		return JS_TRUE;
-
-	if (getaddr(interface, address, sizeof(address)) < 0)
+	if (__pacrunner_js_getipaddr(ctx->proxy, address, sizeof(address)) < 0)
 		return JS_TRUE;
 
 	DBG("address %s", address);

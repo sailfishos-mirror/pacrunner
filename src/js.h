@@ -36,4 +36,6 @@ int pacrunner_js_driver_register(struct pacrunner_js_driver *driver);
 void pacrunner_js_driver_unregister(struct pacrunner_js_driver *driver);
 
 /* Common functions for JS plugins */
+int __pacrunner_js_getipaddr(struct pacrunner_proxy *proxy, char *host,
+			     size_t hostlen);
 extern const char __pacrunner_js_routines[];
