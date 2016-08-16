@@ -121,16 +121,16 @@ static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 	return JS_TRUE;
 }
 
-static JSBool dnsresolve(JSContext *ctx, uintN argc, jsval *vp)
+static JSBool dnsresolve(JSContext *jsctx, uintN argc, jsval *vp)
 {
 	char address[NI_MAXHOST];
-	jsval *argv = JS_ARGV(ctx, vp);
-	char *host = JS_EncodeString(ctx, JS_ValueToString(ctx, argv[0]));
+	jsval *argv = JS_ARGV(jsctx, vp);
+	char *host = JS_EncodeString(jsctx, JS_ValueToString(jsctx, argv[0]));
 	char **split_res;
 
 	DBG("host %s", host);
 
-	JS_SET_RVAL(ctx, vp, JSVAL_NULL);
+	JS_SET_RVAL(jsctx, vp, JSVAL_NULL);
 
 	/* Q&D test on host to know if it is a proper hostname */
 	split_res = g_strsplit_set(host, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
@@ -147,10 +147,10 @@ static JSBool dnsresolve(JSContext *ctx, uintN argc, jsval *vp)
 
 	DBG("address %s", address);
 
-	JS_SET_RVAL(ctx, vp, STRING_TO_JSVAL(JS_NewStringCopyZ(ctx, address)));
+	JS_SET_RVAL(jsctx, vp, STRING_TO_JSVAL(JS_NewStringCopyZ(jsctx, address)));
 
  out:
-	JS_free(ctx, host);
+	JS_free(jsctx, host);
 	return JS_TRUE;
 
 }
