@@ -29,6 +29,7 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <linux/if_arp.h>
 
@@ -63,6 +64,38 @@ int __pacrunner_js_getipaddr(struct pacrunner_proxy *proxy, char *host,
 
 	memcpy(&addr, &ifr.ifr_addr, sizeof(addr));
 	snprintf(host, hostlen, "%s", inet_ntoa(addr.sin_addr));
+
+	return 0;
+}
+
+int __pacrunner_js_resolve(struct pacrunner_proxy *proxy, const char *node,
+			   char *host, size_t hostlen)
+{
+	struct addrinfo *info;
+	char **split_res;
+	int err;
+
+	/* Q&D test on host to know if it is a proper hostname */
+	split_res = g_strsplit_set(node, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
+	if (split_res) {
+		int length = g_strv_length(split_res);
+		g_strfreev(split_res);
+
+		if (length > 1)
+			return -EINVAL;
+	}
+
+
+	if (getaddrinfo(node, NULL, NULL, &info) < 0)
+		return -EIO;
+
+	err = getnameinfo(info->ai_addr, info->ai_addrlen,
+				host, hostlen, NULL, 0, NI_NUMERICHOST);
+
+	freeaddrinfo(info);
+
+	if (err < 0)
+		return -EIO;
 
 	return 0;
 }

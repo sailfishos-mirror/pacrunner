@@ -45,25 +45,6 @@ struct pacrunner_mozjs {
 	JSObject *jsobj;
 };
 
-static int resolve(const char *node, char *host, size_t hostlen)
-{
-	struct addrinfo *info;
-	int err;
-
-	if (getaddrinfo(node, NULL, NULL, &info) < 0)
-		return -EIO;
-
-	err = getnameinfo(info->ai_addr, info->ai_addrlen,
-				host, hostlen, NULL, 0, NI_NUMERICHOST);
-
-	freeaddrinfo(info);
-
-	if (err < 0)
-		return -EIO;
-
-	return 0;
-}
-
 static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 {
 	struct pacrunner_mozjs *ctx = JS_GetContextPrivate(jsctx);
@@ -89,26 +70,19 @@ static JSBool myipaddress(JSContext *jsctx, uintN argc, jsval *vp)
 
 static JSBool dnsresolve(JSContext *jsctx, uintN argc, jsval *vp)
 {
+	struct pacrunner_mozjs *ctx = JS_GetContextPrivate(jsctx);
 	char address[NI_MAXHOST];
 	jsval *argv = JS_ARGV(jsctx, vp);
 	char *host = JS_EncodeString(jsctx, JS_ValueToString(jsctx, argv[0]));
-	char **split_res;
 
 	DBG("host %s", host);
 
 	JS_SET_RVAL(jsctx, vp, JSVAL_NULL);
 
-	/* Q&D test on host to know if it is a proper hostname */
-	split_res = g_strsplit_set(host, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
-	if (split_res) {
-		int length = g_strv_length(split_res);
-		g_strfreev(split_res);
+	if (!ctx)
+		goto out;
 
-		if (length > 1)
-			goto out;
-	}
-
-	if (resolve(host, address, sizeof(address)) < 0)
+	if (__pacrunner_js_resolve(ctx->proxy, host, address, sizeof(address)) < 0)
 		goto out;
 
 	DBG("address %s", address);

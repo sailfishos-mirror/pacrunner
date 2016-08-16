@@ -48,25 +48,6 @@ static gboolean v8_gc(gpointer user_data)
 	return !v8::V8::IdleNotification();
 }
 
-static int resolve(const char *node, char *host, size_t hostlen)
-{
-	struct addrinfo *info;
-	int err;
-
-	if (getaddrinfo(node, NULL, NULL, &info) < 0)
-		return -EIO;
-
-	err = getnameinfo(info->ai_addr, info->ai_addrlen,
-				host, hostlen, NULL, 0, NI_NUMERICHOST);
-
-	freeaddrinfo(info);
-
-	if (err < 0)
-		return -EIO;
-
-	return 0;
-}
-
 static v8::Handle<v8::Value> myipaddress(const v8::Arguments& args)
 {
 	const char *interface;
@@ -96,19 +77,7 @@ static v8::Handle<v8::Value> dnsresolve(const v8::Arguments& args)
 
 	DBG("host %s", *host);
 
-	/* Q&D test on host to know if it is a proper hostname */
-	split_res = g_strsplit_set(*host, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
-	if (split_res) {
-		int length = g_strv_length(split_res);
-		g_strfreev(split_res);
-
-		if (length > 1) {
-			v8::ThrowException(
-				v8::String::New("Failed to resolve"));
-		}
-	}
-
-	if (resolve(*host, address, sizeof(address)) < 0)
+	if (__pacrunner_js_resolve(current_proxy, *host, address, sizeof(address)) < 0)
 		return v8::ThrowException(v8::String::New("Failed to resolve"));
 
 	DBG("address %s", address);
