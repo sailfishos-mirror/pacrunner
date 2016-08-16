@@ -132,6 +132,8 @@ static JSBool dnsresolve(JSContext *ctx, uintN argc, jsval *vp)
 
 	DBG("host %s", host);
 
+	JS_SET_RVAL(ctx, vp, JSVAL_NULL);
+
 	/* Q&D test on host to know if it is a proper hostname */
 	split_res = g_strsplit_set(host, ":%?!,;@\\'*|<>{}[]()+=$&~# \"", -1);
 	if (split_res) {
@@ -141,8 +143,6 @@ static JSBool dnsresolve(JSContext *ctx, uintN argc, jsval *vp)
 		if (length > 1)
 			goto out;
 	}
-
-	JS_SET_RVAL(ctx, vp, JSVAL_NULL);
 
 	if (resolve(host, address, sizeof(address)) < 0)
 		goto out;
