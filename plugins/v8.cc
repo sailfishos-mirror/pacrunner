@@ -148,7 +148,7 @@ static void create_object(void)
 		jsctx.Dispose();
 		return;
 	}
-	
+
 	jsfn = v8::Persistent<v8::Function>::New(v8::Handle<v8::Function>::Cast(fn_val));
 	return;
 }
@@ -219,7 +219,7 @@ static char *v8_execute(struct pacrunner_proxy *proxy, const char *url,
 		    line, *err);
 		return NULL;
 	}
-	
+
 	if (!result->IsString()) {
 		DBG("FindProxyForUrl() failed to return a string");
 		return NULL;
@@ -229,13 +229,13 @@ static char *v8_execute(struct pacrunner_proxy *proxy, const char *url,
 
 	if (!gc_source)
 		gc_source = g_idle_add(v8_gc, NULL);
-		
+
 	return retval;
 }
 
 static struct pacrunner_js_driver v8_driver = {
 	"v8",
-	PACRUNNER_JS_PRIORITY_HIGH,
+	PACRUNNER_JS_PRIORITY_LOW,
 	v8_set_proxy,
 	NULL,
 	v8_execute,
