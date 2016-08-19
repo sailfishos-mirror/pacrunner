@@ -126,7 +126,7 @@ unit_test_pacrunner_SOURCES = unit/test-pacrunner.c src/pacrunner.h \
 			src/proxy.c src/manual.c src/download.c \
 			src/js.c src/log.c src/plugin.c $(js_sources)
 
-unit_test_pacrunner_LDADD = @GLIB_LIBS@ -ldl
+unit_test_pacrunner_LDADD = @GLIB_LIBS@ @CUNIT_LIBS@ -ldl
 
 if CURL
 
@@ -162,7 +162,7 @@ endif
 
 endif #UNIT
 
-AM_CFLAGS = @GLIB_CFLAGS@ @PTHREAD_LIBS@ @DBUS_CFLAGS@ \
+AM_CFLAGS = @GLIB_CFLAGS@ @PTHREAD_LIBS@ @DBUS_CFLAGS@ @CUNIT_CFLAGS@ \
 				$(builtin_cflags) \
 				-DPACRUNNER_PLUGIN_BUILTIN \
 				-DPLUGINDIR=\""$(plugindir)"\"

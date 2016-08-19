@@ -49,15 +49,15 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 ])
 
 AC_ARG_ENABLE(unit, AC_HELP_STRING([--enable-unit],
-			[enable compiling unit test binaries]), [
-	if (test "${enable_unit}" = "yes"); then
-		AC_CHECK_LIB([cunit], [CU_initialize_registry], [], [
-			AC_MSG_ERROR([CUnit is required to get the unit tests])
-		])
-		LDFLAGS="$LDFLAGS -lcunit"
-	fi
-])
-
+			[enable compiling unit test binaries]))
+if (test "${enable_unit}" = "yes"); then
+	AC_CHECK_LIB([cunit], CU_initialize_registry, dummy=yes,
+		AC_MSG_ERROR([CUnit is required to get the unit tests]))
+	CUNIT_CFLAGS=""
+	CUNIT_LIBS="-lcunit"
+	AC_SUBST(CUNIT_CFLAGS)
+	AC_SUBST(CUNIT_LIBS)
+fi
 AM_CONDITIONAL(UNIT, test "${enable_unit}" = "yes")
 
 AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
@@ -71,7 +71,6 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 
 AC_ARG_ENABLE(duktape, AC_HELP_STRING([--enable-duktape],
 		[enable Duktape Javascript plugin support]))
-
 AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
 
 AC_ARG_ENABLE(mozjs, AC_HELP_STRING([--enable-mozjs],
@@ -79,12 +78,10 @@ AC_ARG_ENABLE(mozjs, AC_HELP_STRING([--enable-mozjs],
 if (test "${enable_mozjs}" = "yes"); then
 	PKG_CHECK_MODULES(MOZJS,  mozjs185, dummy=yes,
 			AC_MSG_ERROR(Mozilla Javascript >= 1.8 is required))
-
 	AC_SUBST(MOZJS_CFLAGS)
 	AC_SUBST(MOZJS_LIBS)
 fi
 AM_CONDITIONAL(MOZJS, test "${enable_mozjs}" = "yes")
-
 
 AC_ARG_ENABLE(v8, AC_HELP_STRING([--enable-v8],
 		[enable V8 Javascript plugin support]))
