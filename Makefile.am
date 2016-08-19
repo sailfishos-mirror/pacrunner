@@ -19,6 +19,8 @@ builtin_sources =
 builtin_cflags =
 builtin_libadd =
 
+noinst_LIBRARIES =
+
 if CURL
 builtin_modules += curl
 builtin_sources += plugins/curl.c
@@ -37,17 +39,24 @@ endif
 if V8
 js_sources = src/js_funcs.c
 builtin_modules += v8
-builtin_sources += plugins/v8.cc
-builtin_libadd += @V8_LIBS@
+builtin_libadd += plugins/libv8plugin.a @V8_LIBS@
+
+# If we compile this into a v8.a library first, then autohell
+# won't use g++ to link pacrunner. And thus won't end up linking
+# against libstdc++ even in the builds where V8 is disabled.
+noinst_LIBRARIES += plugins/libv8plugin.a
+
+plugins_libv8plugin_a_SOURCES = plugins/v8.cc
+
 endif
 
 if DUKTAPE
 js_sources = src/js_funcs.c
 builtin_modules += duktape
 builtin_sources += plugins/duktape.c
-builtin_libadd += duktape/libduktape.a
+builtin_libadd += duktape/libduktape.a -lm
 
-noinst_LIBRARIES = duktape/libduktape.a
+noinst_LIBRARIES += duktape/libduktape.a
 
 duktape_libduktape_a_SOURCES = duktape/duk_config.h \
 				duktape/duktape.h \
@@ -142,15 +151,13 @@ unit_test_mozjs_LDADD = @MOZJS_LIBS@ @GLIB_LIBS@ @PTHREAD_LIBS@
 endif
 
 if V8
-unit_test_pacrunner_SOURCES += plugins/v8.cc
-
-unit_test_pacrunner_LDADD += @V8_LIBS@
+unit_test_pacrunner_LDADD += plugins/libv8plugin.a @V8_LIBS@
 endif
 
 if DUKTAPE
 unit_test_pacrunner_SOURCES += plugins/duktape.c
 
-unit_test_pacrunner_LDADD += duktape/libduktape.a
+unit_test_pacrunner_LDADD += duktape/libduktape.a -lm
 endif
 
 endif #UNIT
@@ -160,7 +167,7 @@ AM_CFLAGS = @GLIB_CFLAGS@ @PTHREAD_LIBS@ @DBUS_CFLAGS@ \
 				-DPACRUNNER_PLUGIN_BUILTIN \
 				-DPLUGINDIR=\""$(plugindir)"\"
 
-AM_CXXFLAGS = $(AM_CFLAGS)
+AM_CXXFLAGS = $(AM_CFLAGS) -fno-exceptions
 
 AM_CPPFLAGS = -I$(builddir)/src -I$(srcdir)/src -I$(srcdir)/gdbus
 
