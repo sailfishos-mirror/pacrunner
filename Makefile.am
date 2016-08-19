@@ -44,11 +44,18 @@ endif
 if DUKTAPE
 js_sources = src/js_funcs.c
 builtin_modules += duktape
-builtin_sources += plugins/duktape.c \
-			duktape/duk_config.h \
-			duktape/duktape.h \
-			duktape/duktape.c
+builtin_sources += plugins/duktape.c
+builtin_libadd += duktape/libduktape.a
+
+noinst_LIBRARIES = duktape/libduktape.a
+
+duktape_libduktape_a_SOURCES = duktape/duk_config.h \
+				duktape/duktape.h \
+				duktape/duktape.c
+duktape_libduktape_a_CFLAGS = -Wno-unused-function
 endif
+
+duktape_libduktape_a_SHORTNAME = libduktape
 
 sbin_PROGRAMS = src/pacrunner
 
@@ -141,7 +148,9 @@ unit_test_pacrunner_LDADD += @V8_LIBS@
 endif
 
 if DUKTAPE
-unit_test_pacrunner_SOURCES += plugins/duktape.c duktape/duktape.c
+unit_test_pacrunner_SOURCES += plugins/duktape.c
+
+unit_test_pacrunner_LDADD += duktape/libduktape.a
 endif
 
 endif #UNIT
