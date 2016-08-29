@@ -40,6 +40,7 @@ struct pacrunner_proxy {
 	char *script;
 	GList **servers;
 	GList **excludes;
+	gboolean browser_only;
 	GList *domains;
 	void *jsctx;
 };
@@ -159,13 +160,37 @@ const char *pacrunner_proxy_get_script(struct pacrunner_proxy *proxy)
 	return proxy->script;
 }
 
-int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy, char **domains)
+static gboolean check_browser_protocol(const char *url)
+{
+	static const char *browser_schemes[] = {
+		"http://",
+		"https://",
+		"ftp://",
+		"nntp://",
+		"nntps://",
+	};
+	guint i;
+
+	for (i = 0; i < G_N_ELEMENTS(browser_schemes); i++) {
+		if (strncmp(browser_schemes[i], url,
+				strlen(browser_schemes[i])) == 0)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+int pacrunner_proxy_set_domains(struct pacrunner_proxy *proxy, char **domains,
+					gboolean browser_only)
 {
 	int len;
 	char *slash, **domain;
 	char ip[INET6_ADDRSTRLEN + 1];
 
-	DBG("proxy %p domains %p", proxy, domains);
+	DBG("proxy %p domains %p browser-only %u", proxy,
+					domains, browser_only);
+
+	proxy->browser_only = browser_only;
 
 	if (!proxy)
 		return -EINVAL;
@@ -476,13 +501,34 @@ static int compare_host_in_domain(const char *host, struct proxy_domain *match)
 	return -1;
 }
 
+/**
+ * A request for a "browser" protocol would match the following configs
+ * order of preference (if they exist):
+ * • Matching "Domains", BrowserOnly==TRUE
+ * • Matching "Domains", BrowserOnly==FALSE
+ * • Domains==NULL, BrowserOnly==TRUE
+ * • Domains==NULL, BrowserOnly==FALSE
+ *
+ * A request for a non-browser protocol would match the following :
+ * • Matching "Domains", BrowserOnly==FALSE
+ * • Domains==NULL, BrowserOnly==FALSE (except if a config exists with
+ * Matching "Domains", BrowserOnly==TRUE, in which case we need to
+ * return NULL).
+ **/
 char *pacrunner_proxy_lookup(const char *url, const char *host)
 {
 	GList *l, *list;
+	int protocol = 0;
 	struct in_addr ip4_addr;
 	struct in6_addr ip6_addr;
-	struct pacrunner_proxy *selected_proxy = NULL, *default_proxy = NULL;
-	int protocol = 0;
+	gboolean request_is_browser;
+	struct pacrunner_proxy *proxy = NULL;
+
+	/* Four classes of 'match' */
+	struct pacrunner_proxy *alldomains_browseronly = NULL;
+	struct pacrunner_proxy *alldomains_allprotos = NULL;
+	struct pacrunner_proxy *domainmatch_browseronly = NULL;
+	struct pacrunner_proxy *domainmatch_allprotos = NULL;
 
 	DBG("url %s host %s", url, host);
 
@@ -512,12 +558,16 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 		}
 	}
 
+	request_is_browser = check_browser_protocol(url);
+
 	for (list = g_list_first(proxy_list); list; list = g_list_next(list)) {
-		struct pacrunner_proxy *proxy = list->data;
+		proxy = list->data;
 
 		if (!proxy->domains) {
-			if (!default_proxy)
-				default_proxy = proxy;
+			if (proxy->browser_only && !alldomains_browseronly)
+				alldomains_browseronly = proxy;
+			else if (!proxy->browser_only && !alldomains_allprotos)
+				alldomains_allprotos = proxy;
 			continue;
 		}
 
@@ -531,54 +581,79 @@ char *pacrunner_proxy_lookup(const char *url, const char *host)
 			case 4:
 				if (compare_legacy_ip_in_net(&ip4_addr,
 								data) == 0) {
-					selected_proxy = proxy;
 					DBG("match proxy %p Legacy IP range %s",
 					    proxy, data->domain);
-					goto found;
+					goto matches;
 				}
 				break;
 			case 6:
 				if (compare_ipv6_in_net(&ip6_addr,
 							data) == 0) {
-					selected_proxy = proxy;
 					DBG("match proxy %p IPv6 range %s",
 					    proxy, data->domain);
-					goto found;
+					goto matches;
 				}
 				break;
 			default:
 				if (compare_host_in_domain(host, data) == 0) {
-					selected_proxy = proxy;
 					DBG("match proxy %p DNS domain %s",
 					    proxy, data->domain);
-					goto found;
+					goto matches;
 				}
 				break;
 			}
 		}
+		/* No match */
+		continue;
+
+	matches:
+		if (proxy->browser_only == request_is_browser) {
+			goto found;
+		} else if (proxy->browser_only) {
+			/* A non-browser request will return DIRECT instead of
+			 * falling back to alldomains_* if this exists.
+			 */
+			if (!domainmatch_browseronly)
+				domainmatch_browseronly = proxy;
+		} else {
+			/* We might fall back to this, for a browser request */
+			if (!domainmatch_allprotos)
+				domainmatch_allprotos = proxy;
+		}
 	}
 
-	if (!selected_proxy) {
-		DBG("default proxy %p", default_proxy);
-		selected_proxy = default_proxy;
+	if (request_is_browser) {
+		/* We'll have bailed out immediately if we found a domain match
+		 * with proxy->browser_only==TRUE. Fallbacks in order of prefe-
+		 * rence.
+		 */
+		proxy = domainmatch_allprotos;
+		if (!proxy)
+			proxy = alldomains_browseronly;
+		if (!proxy)
+			proxy = alldomains_allprotos;
+	} else {
+		if (!domainmatch_browseronly)
+			proxy = alldomains_allprotos;
+		else
+			proxy = NULL;
 	}
 
-found:
+ found:
 	pthread_mutex_unlock(&proxy_mutex);
 
-	if (!selected_proxy)
+	if (!proxy)
 		return NULL;
 
-	switch (selected_proxy->method) {
+	switch (proxy->method) {
 	case PACRUNNER_PROXY_METHOD_UNKNOWN:
 	case PACRUNNER_PROXY_METHOD_DIRECT:
 		break;
 	case PACRUNNER_PROXY_METHOD_MANUAL:
-		return __pacrunner_manual_execute(url, host,
-						selected_proxy->servers,
-						selected_proxy->excludes);
+		return __pacrunner_manual_execute(url, host, proxy->servers,
+						  proxy->excludes);
 	case PACRUNNER_PROXY_METHOD_AUTO:
-		return __pacrunner_js_execute(selected_proxy, url, host);
+		return __pacrunner_js_execute(proxy, url, host);
 	}
 
 	return NULL;

@@ -363,7 +363,7 @@ static void test_proxy_domain(void)
 {
 	int val = 0;
 
-	if (pacrunner_proxy_set_domains(proxy, test_suite->domains) != 0)
+	if (pacrunner_proxy_set_domains(proxy, test_suite->domains, FALSE) != 0)
 		val = -1;
 
 	proxy2 = pacrunner_proxy_create("eth1");
@@ -381,7 +381,7 @@ static void test_proxy_domain(void)
 		if (pacrunner_proxy_set_manual(proxy2, servers, NULL) != 0)
 			val = -1;
 
-		if (pacrunner_proxy_set_domains(proxy2, domains) != 0)
+		if (pacrunner_proxy_set_domains(proxy2, domains, FALSE) != 0)
 			val = -1;
 	}
 
@@ -400,7 +400,7 @@ static void test_proxy_domain(void)
 		if (pacrunner_proxy_set_manual(proxy3, servers, NULL) != 0)
 			val = -1;
 
-		if (pacrunner_proxy_set_domains(proxy3, domains) != 0)
+		if (pacrunner_proxy_set_domains(proxy3, domains, FALSE) != 0)
 			val = -1;
 	}
 

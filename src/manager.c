@@ -142,6 +142,7 @@ static DBusMessage *create_proxy_config(DBusConnection *conn,
 	const char *url = NULL, *script = NULL;
 	char **servers = NULL, **excludes = NULL;
 	char **domains = NULL, **nameservers = NULL;
+	gboolean browser_only = FALSE;
 
 	sender = dbus_message_get_sender(msg);
 
@@ -199,13 +200,18 @@ static DBusMessage *create_proxy_config(DBusConnection *conn,
 				nameservers = extract_string_array(&list);
 			}
 			break;
+		case DBUS_TYPE_BOOLEAN:
+			if (g_str_equal(key, "BrowserOnly"))
+				dbus_message_iter_get_basic(&value,
+								&browser_only);
+			break;
 		}
 
 		dbus_message_iter_next(&array);
 	}
 
 	DBG("sender %s method %s interface %s", sender, method, interface);
-	DBG("url %s script %p", url, script);
+	DBG("browser-only %u url %s script %p", browser_only, url, script);
 
 	if (!method) {
 		reply = g_dbus_create_error(msg,
@@ -226,7 +232,8 @@ static DBusMessage *create_proxy_config(DBusConnection *conn,
 
 	nameservers = NULL;
 
-	if (pacrunner_proxy_set_domains(config->proxy, domains) < 0)
+	if (pacrunner_proxy_set_domains(config->proxy, domains,
+						browser_only) < 0)
 		pacrunner_error("Failed to set proxy domains");
 
 	if (g_str_equal(method, "direct")) {
