@@ -17,6 +17,9 @@ function FindProxyForURL(url, host)
 
 [excludes]
 
+[browseronly]
+TRUE
+
 [domains]
 
 [config]
@@ -25,3 +28,5 @@ VALID
 [tests]
 http://www.example.com/site/test.html www.example.com
 PROXY proxy.example.com
+smtp://foo.com foo.com
+DIRECT

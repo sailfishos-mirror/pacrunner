@@ -15,6 +15,9 @@ ftp://
 *net
 tri*
 
+[browseronly]
+TRUE
+
 [domains]
 
 [config]
@@ -32,4 +35,12 @@ DIRECT
 trivial.co.uk:2984 trivial.co.uk
 DIRECT
 http://failed.com:99999/ failed.com
+DIRECT
+http://foo.intel.com foo.intel.com
+PROXY proxy2.com; PROXY secproxy2.com
+smtp://foo.intel.com foo.intel.com
+DIRECT
+imap://foo.redhat.com foo.redhat.com
+SOCKS4 server.one.com; SOCKS5 server.two.com
+smtp://no.match.com no.match.com
 DIRECT

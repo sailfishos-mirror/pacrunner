@@ -11,6 +11,9 @@ Stub suite file
 [excludes]
 # If so, optional exlusion rules can be written here
 
+[browseronly]
+# Specifies if this configuration is for browser only schemes.
+
 [domains]
 # List of domains are here
 

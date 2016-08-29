@@ -38,14 +38,15 @@
 #include "pacrunner.h"
 
 enum test_suite_part {
-	SUITE_TITLE    = 0,
-	SUITE_PAC      = 1,
-	SUITE_SERVERS  = 2,
-	SUITE_EXCLUDES = 3,
-	SUITE_DOMAINS  = 4,
-	SUITE_CONFIG   = 5,
-	SUITE_TESTS    = 6,
-	SUITE_NOTHING  = 7,
+	SUITE_TITLE        = 0,
+	SUITE_PAC          = 1,
+	SUITE_SERVERS      = 2,
+	SUITE_EXCLUDES     = 3,
+	SUITE_BROWSER_ONLY = 4,
+	SUITE_DOMAINS      = 5,
+	SUITE_CONFIG       = 6,
+	SUITE_TESTS        = 7,
+	SUITE_NOTHING      = 8,
 };
 
 enum cu_test_mode {
@@ -59,6 +60,7 @@ struct pacrunner_test_suite {
 	gchar *pac;
 	gchar **servers;
 	gchar **excludes;
+	gboolean browser_only;
 	gchar **domains;
 
 	bool config_result;
@@ -144,6 +146,9 @@ static void print_test_suite(struct pacrunner_test_suite *suite)
 			printf("%s\n", *line);
 	} else
 		printf("(none)\n");
+
+	printf("\nBrowser Only: %s\n",
+			suite->browser_only ? "TRUE" : "FALSE");
 
 	printf("\nDomains:\n");
 	if (suite->domains) {
@@ -250,6 +255,13 @@ static struct pacrunner_test_suite *read_test_suite(const char *path)
 				suite->excludes = array;
 
 				break;
+			case SUITE_BROWSER_ONLY:
+				if (strncmp(*line, "TRUE", 4) == 0)
+					suite->browser_only = TRUE;
+				else
+					suite->browser_only = FALSE;
+
+				break;
 			case SUITE_DOMAINS:
 				array = _g_strappendv(suite->domains, *line);
 				if (!array)
@@ -291,6 +303,8 @@ static struct pacrunner_test_suite *read_test_suite(const char *path)
 			part = SUITE_SERVERS;
 		else if (strncmp(*line, "[excludes]", 10) == 0)
 			part = SUITE_EXCLUDES;
+		else if (strncmp(*line, "[browseronly]", 13) == 0)
+			part = SUITE_BROWSER_ONLY;
 		else if (strncmp(*line, "[domains]", 9) == 0)
 			part = SUITE_DOMAINS;
 		else if (strncmp(*line, "[config]", 8) == 0)
@@ -363,7 +377,8 @@ static void test_proxy_domain(void)
 {
 	int val = 0;
 
-	if (pacrunner_proxy_set_domains(proxy, test_suite->domains, FALSE) != 0)
+	if (pacrunner_proxy_set_domains(proxy, test_suite->domains,
+					test_suite->browser_only) != 0)
 		val = -1;
 
 	proxy2 = pacrunner_proxy_create("eth1");
@@ -381,15 +396,16 @@ static void test_proxy_domain(void)
 		if (pacrunner_proxy_set_manual(proxy2, servers, NULL) != 0)
 			val = -1;
 
-		if (pacrunner_proxy_set_domains(proxy2, domains, FALSE) != 0)
+		/* BrowserOnly = TRUE */
+		if (pacrunner_proxy_set_domains(proxy2, domains, TRUE) != 0)
 			val = -1;
 	}
 
 	proxy3 = pacrunner_proxy_create("wl0");
 	if (proxy3) {
 		char *servers[] = {
-			"http://proxy3.com",
-			"socks4://sockproxy3.com",
+			"socks4://server.one.com",
+			"socks5://server.two.com",
 			NULL};
 		char *domains[] = {
 			"redhat.com",
@@ -400,6 +416,7 @@ static void test_proxy_domain(void)
 		if (pacrunner_proxy_set_manual(proxy3, servers, NULL) != 0)
 			val = -1;
 
+		/* BrowserOnly = FALSE */
 		if (pacrunner_proxy_set_domains(proxy3, domains, FALSE) != 0)
 			val = -1;
 	}
@@ -499,9 +516,7 @@ static void run_test_suite(const char *test_file_path, enum cu_test_mode mode)
 		CU_add_test(cu_suite, "Manual config test",
 						test_manual_config);
 
-	if (test_suite->domains)
-		CU_add_test(cu_suite, "Proxy domain test",
-						test_proxy_domain);
+	CU_add_test(cu_suite, "Proxy Domain test", test_proxy_domain);
 
 	if (test_suite->config_result && test_suite->tests)
 		CU_add_test(cu_suite, "Proxy requests test",
@@ -509,10 +524,10 @@ static void run_test_suite(const char *test_file_path, enum cu_test_mode mode)
 
 	test_config = false;
 
-	if (test_suite->domains) {
+	if (proxy2)
 		pacrunner_proxy_unref(proxy2);
+	if (proxy3)
 		pacrunner_proxy_unref(proxy3);
-	}
 
 	switch (mode) {
 	case CU_MODE_BASIC:

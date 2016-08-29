@@ -11,6 +11,9 @@ function FindProxyForURL(url, host)
 
 [excludes]
 
+[browseronly]
+FALSE
+
 [domains]
 
 [config]
@@ -20,4 +23,6 @@ VALID
 http://truc.com truc.com
 DIRECT
 ftp://test.boujou.org test.boujou.org
+DIRECT
+smtp://foo.com foo.com
 DIRECT

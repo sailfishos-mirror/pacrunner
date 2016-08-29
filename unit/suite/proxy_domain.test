@@ -8,6 +8,9 @@ http://proxy.suite.com
 
 [excludes]
 
+[browseronly]
+TRUE
+
 [domains]
 suite.com
 test.suite.com
@@ -32,6 +35,12 @@ PROXY secproxy2.com; PROXY proxy2.com
 http://192.168.4.4/index.html 192.168.4.4
 PROXY proxy2.com; PROXY secproxy2.com
 socks4://baz.domain3.com/xyz baz.domain3.com
-SOCKS4 sockproxy3.com; PROXY proxy3.com
+SOCKS4 server.one.com; SOCKS5 server.two.com
 http://[fe80:96db:12ce::43ef]/ip6.mp4 [fe80:96db:12ce::43ef]
-PROXY proxy3.com; SOCKS4 sockproxy3.com
+SOCKS4 server.one.com; SOCKS5 server.two.com
+imap://mail.google.com/id=inbox mail.google.com
+DIRECT
+imap://foo.redhat.com foo.redhat.com
+SOCKS4 server.one.com; SOCKS5 server.two.com
+smtp://bar.intel.com bar.intel.com
+DIRECT
