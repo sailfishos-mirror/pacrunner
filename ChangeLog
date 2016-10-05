@@ -1,3 +1,10 @@
+ver 0.10:
+	Fix issue with domain lookups and host matching.
+	Fix issue with handling wrongly-formatted hostname.
+	Add support for proxy specific Javascript contexts.
+	Add support for browser only proxy option.
+	Add support for Duktape Javescript engine.
+
 ver 0.9:
 	Fix issue with detaching threads that are never joined.
 	Fix issue with resolving wrongly formatted hostnames.
