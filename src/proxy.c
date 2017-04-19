@@ -444,9 +444,10 @@ int pacrunner_proxy_disable(struct pacrunner_proxy *proxy)
 
 	pthread_mutex_lock(&proxy_mutex);
 	proxy_list = g_list_remove_link(proxy_list, list);
+	g_list_free(list);
 	pthread_mutex_unlock(&proxy_mutex);
 
-	__pacrunner_js_set_proxy(NULL);
+	__pacrunner_js_clear_proxy(proxy);
 
 	pacrunner_proxy_unref(proxy);
 
