@@ -93,19 +93,19 @@ static void test_multiple_init(void)
 
 static void test_single_execute_without_pac(void)
 {
-	const char *result;
+	char *result;
 
 	g_assert(mozjs_init() == 0);
 
 	result = __pacrunner_js_execute(proxy, EXAMPLE_URL, EXAMPLE_HOST);
 	g_test_message("result: %s", result);
-
+	g_free(result);
 	mozjs_exit();
 }
 
 static void test_multiple_execute_without_pac(void)
 {
-	const char *result;
+	char *result;
 	int i;
 
 	g_assert(mozjs_init() == 0);
@@ -114,6 +114,7 @@ static void test_multiple_execute_without_pac(void)
 		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
 						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
+		g_free(result);
 	}
 
 	mozjs_exit();
@@ -121,7 +122,7 @@ static void test_multiple_execute_without_pac(void)
 
 static void test_single_execute_with_direct_pac(void)
 {
-	const char *result;
+	char *result;
 
 	g_assert(mozjs_init() == 0);
 
@@ -129,6 +130,7 @@ static void test_single_execute_with_direct_pac(void)
 
 	result = __pacrunner_js_execute(proxy, EXAMPLE_URL, EXAMPLE_HOST);
 	g_test_message("result: %s", result);
+	g_free(result);
 
 	pacrunner_proxy_disable(proxy);
 
@@ -137,7 +139,7 @@ static void test_single_execute_with_direct_pac(void)
 
 static void test_multiple_execute_with_direct_pac(void)
 {
-	const char *result;
+	char *result;
 	int i;
 
 	mozjs_init();
@@ -148,6 +150,7 @@ static void test_multiple_execute_with_direct_pac(void)
 		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
 						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
+		g_free(result);
 	}
 
 	pacrunner_proxy_disable(proxy);
@@ -157,7 +160,7 @@ static void test_multiple_execute_with_direct_pac(void)
 
 static void test_massive_execute_with_direct_pac(void)
 {
-	const char *result;
+	char *result;
 	int i;
 
 	mozjs_init();
@@ -168,6 +171,7 @@ static void test_massive_execute_with_direct_pac(void)
 		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
 						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
+		g_free(result);
 	}
 
 	pacrunner_proxy_disable(proxy);
@@ -177,7 +181,7 @@ static void test_massive_execute_with_direct_pac(void)
 
 static void test_multiple_execute_with_example_pac(void)
 {
-	const char *result;
+	char *result;
 	int i;
 
 	mozjs_init();
@@ -188,6 +192,7 @@ static void test_multiple_execute_with_example_pac(void)
 		result = __pacrunner_js_execute(proxy, EXAMPLE_URL,
 						EXAMPLE_HOST);
 		g_test_message("result %d: %s", i, result);
+		g_free(result);
 	}
 
 	pacrunner_proxy_disable(proxy);
