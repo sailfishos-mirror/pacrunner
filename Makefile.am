@@ -31,9 +31,10 @@ endif
 if MOZJS
 js_sources = src/js_funcs.c
 builtin_modules += mozjs
-builtin_sources += plugins/mozjs.c
-builtin_cflags += @MOZJS_CFLAGS@
-builtin_libadd += @MOZJS_LIBS@
+builtin_libadd += plugins/libmozjsplugin.a @MOZJS_LIBS@ -lstdc++
+noinst_LIBRARIES += plugins/libmozjsplugin.a
+plugins_libmozjsplugin_a_SOURCES = plugins/mozjs.cc
+plugins_libmozjsplugin_a_CXXFLAGS = $(AM_CFLAGS) @MOZJS_CFLAGS@ @DBUS_CFLAGS@ @GLIB_CFLAGS@
 endif
 
 if V8
@@ -137,16 +138,16 @@ unit_test_pacrunner_LDADD += @CURL_LIBS@
 endif
 
 if MOZJS
-unit_test_pacrunner_SOURCES += plugins/mozjs.c
-
+unit_test_pacrunner_SOURCES += plugins/mozjs.cc
+unit_test_pacrunner_CXXFLAGS = $(AM_CFLAGS)  @MOZJS_CFLAGS@
 unit_test_pacrunner_LDADD += @MOZJS_LIBS@ @PTHREAD_LIBS@
 
 noinst_PROGRAMS += unit/test-mozjs
 
 unit_test_mozjs_SOURCES = unit/test-mozjs.c src/pacrunner.h \
 			src/proxy.c src/manual.c src/download.c \
-				src/js.c plugins/mozjs.c $(js_sources)
-
+				src/js.c plugins/mozjs.cc $(js_sources)
+unit_test_mozjs_CXXFLAGS = $(AM_CFLAGS)  @MOZJS_CFLAGS@
 unit_test_mozjs_LDADD = @MOZJS_LIBS@ @GLIB_LIBS@ @PTHREAD_LIBS@
 endif
 

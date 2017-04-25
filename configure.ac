@@ -76,8 +76,8 @@ AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
 AC_ARG_ENABLE(mozjs, AC_HELP_STRING([--enable-mozjs],
 		[enable Mozilla Javascript plugin support]))
 if (test "${enable_mozjs}" = "yes"); then
-	PKG_CHECK_MODULES(MOZJS,  mozjs185, dummy=yes,
-			AC_MSG_ERROR(Mozilla Javascript >= 1.8 is required))
+	PKG_CHECK_MODULES(MOZJS,  mozjs-38, dummy=yes,
+			AC_MSG_ERROR(Mozilla Javascript version 38 is required))
 	AC_SUBST(MOZJS_CFLAGS)
 	AC_SUBST(MOZJS_LIBS)
 fi
