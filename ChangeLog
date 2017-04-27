@@ -1,3 +1,8 @@
+ver 0.11:
+	Fix issue with unclean shutdown when disabling proxy.
+	Add support for building against SpiderMonkey 38.
+	Add support for Duktape 2.1.0 engine release.
+
 ver 0.10:
 	Fix issue with domain lookups and host matching.
 	Fix issue with handling wrongly-formatted hostname.
