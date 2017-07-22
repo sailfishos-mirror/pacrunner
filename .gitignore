@@ -27,7 +27,7 @@ autom4te.cache
 
 src/builtin.h
 src/pacrunner
-src/pacrunner.service
+src/org.pacrunner.service
 libproxy/libproxy-1.0.pc
 tools/proxy
 tools/manual-proxy-test
