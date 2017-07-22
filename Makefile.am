@@ -62,7 +62,9 @@ noinst_LIBRARIES += duktape/libduktape.a
 duktape_libduktape_a_SOURCES = duktape/duk_config.h \
 				duktape/duktape.h \
 				duktape/duktape.c
-duktape_libduktape_a_CFLAGS = -Wno-unused-function
+duktape_libduktape_a_CFLAGS = -Wno-unused-function \
+				-Wno-format-truncation \
+				-Wimplicit-fallthrough=2
 endif
 
 duktape_libduktape_a_SHORTNAME = libduktape
