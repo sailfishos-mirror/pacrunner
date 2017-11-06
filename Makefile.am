@@ -62,10 +62,6 @@ noinst_LIBRARIES += duktape/libduktape.a
 duktape_libduktape_a_SOURCES = duktape/duk_config.h \
 				duktape/duktape.h \
 				duktape/duktape.c
-duktape_libduktape_a_CFLAGS = -Wno-format-truncation
-if GCC7
-duktape_libduktape_a_CFLAGS += -Wimplicit-fallthrough=2
-endif
 endif
 
 duktape_libduktape_a_SHORTNAME = libduktape

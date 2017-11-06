@@ -20,9 +20,6 @@ PKG_PROG_PKG_CONFIG
 
 COMPILER_FLAGS
 
-AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough=2], have_gcc7=yes)
-AM_CONDITIONAL(GCC7, test "${have_gcc7}" = "yes")
-
 AC_LANG_C
 
 AC_PROG_CC
