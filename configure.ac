@@ -73,16 +73,6 @@ AC_ARG_ENABLE(duktape, AC_HELP_STRING([--enable-duktape],
 		[enable Duktape Javascript plugin support]))
 AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
 
-AC_ARG_ENABLE(mozjs, AC_HELP_STRING([--enable-mozjs],
-		[enable Mozilla Javascript plugin support]))
-if (test "${enable_mozjs}" = "yes"); then
-	PKG_CHECK_MODULES(MOZJS,  mozjs-38, dummy=yes,
-			AC_MSG_ERROR(Mozilla Javascript version 38 is required))
-	AC_SUBST(MOZJS_CFLAGS)
-	AC_SUBST(MOZJS_LIBS)
-fi
-AM_CONDITIONAL(MOZJS, test "${enable_mozjs}" = "yes")
-
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.16, dummy=yes,
 				AC_MSG_ERROR(GLib >= 2.16 is required))
 AC_SUBST(GLIB_CFLAGS)

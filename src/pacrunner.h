@@ -105,11 +105,6 @@ void __pacrunner_manual_destroy_excludes(GList **excludes);
 char *__pacrunner_manual_execute(const char *url, const char *host,
 				 GList **servers, GList **excludes);
 
-int __pacrunner_mozjs_init(void);
-void __pacrunner_mozjs_cleanup(void);
-int __pacrunner_mozjs_set_proxy(struct pacrunner_proxy *proxy);
-char *__pacrunner_mozjs_execute(const char *url, const char *host);
-
 int __pacrunner_js_init(void);
 void __pacrunner_js_cleanup(void);
 int __pacrunner_js_set_proxy(struct pacrunner_proxy *proxy);
