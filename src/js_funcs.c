@@ -53,7 +53,7 @@ int __pacrunner_js_getipaddr(struct pacrunner_proxy *proxy, char *host,
 		return -EIO;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
+	strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name) - 1);
 
 	err = ioctl(sk, SIOCGIFADDR, &ifr);
 
