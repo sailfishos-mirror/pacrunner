@@ -37,20 +37,6 @@ plugins_libmozjsplugin_a_SOURCES = plugins/mozjs.cc
 plugins_libmozjsplugin_a_CXXFLAGS = $(AM_CFLAGS) @MOZJS_CFLAGS@ @DBUS_CFLAGS@ @GLIB_CFLAGS@
 endif
 
-if V8
-js_sources = src/js_funcs.c
-builtin_modules += v8
-builtin_libadd += plugins/libv8plugin.a @V8_LIBS@
-
-# If we compile this into a v8.a library first, then autohell
-# won't use g++ to link pacrunner. And thus won't end up linking
-# against libstdc++ even in the builds where V8 is disabled.
-noinst_LIBRARIES += plugins/libv8plugin.a
-
-plugins_libv8plugin_a_SOURCES = plugins/v8.cc
-
-endif
-
 if DUKTAPE
 js_sources = src/js_funcs.c
 builtin_modules += duktape
@@ -148,10 +134,6 @@ unit_test_mozjs_SOURCES = unit/test-mozjs.c src/pacrunner.h \
 				src/js.c plugins/mozjs.cc $(js_sources)
 unit_test_mozjs_CXXFLAGS = $(AM_CFLAGS)  @MOZJS_CFLAGS@
 unit_test_mozjs_LDADD = @MOZJS_LIBS@ @GLIB_LIBS@ @PTHREAD_LIBS@
-endif
-
-if V8
-unit_test_pacrunner_LDADD += plugins/libv8plugin.a @V8_LIBS@
 endif
 
 if DUKTAPE

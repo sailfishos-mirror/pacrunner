@@ -83,15 +83,6 @@ if (test "${enable_mozjs}" = "yes"); then
 fi
 AM_CONDITIONAL(MOZJS, test "${enable_mozjs}" = "yes")
 
-AC_ARG_ENABLE(v8, AC_HELP_STRING([--enable-v8],
-		[enable V8 Javascript plugin support]))
-if (test "${enable_v8}" = "yes"); then
-	AC_CHECK_LIB(v8, _ZN2v82V810InitializeEv,
-		[V8_LIBS="-lv8 -lpthread" AC_SUBST(V8_LIBS)],
-		[AC_MSG_ERROR(Chrome v8 is required)], -lpthread)
-fi
-AM_CONDITIONAL(V8, test "${enable_v8}" = "yes")
-
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.16, dummy=yes,
 				AC_MSG_ERROR(GLib >= 2.16 is required))
 AC_SUBST(GLIB_CFLAGS)
