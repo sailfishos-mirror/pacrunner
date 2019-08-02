@@ -1,3 +1,8 @@
+ver 0.16:
+	Add support for Duktape 2.4.0 engine release.
+	Remove support for MozJS engine.
+	Remove support for V8 engine.
+
 ver 0.15:
 	Add support for Duktape 2.3.0 engine release.
 
