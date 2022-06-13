@@ -26,11 +26,8 @@ AC_PROG_CC
 AC_PROG_CC_PIE
 AC_PROG_INSTALL
 
-m4_define([_LT_AC_TAGCONFIG], [])
-m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
-
-AC_DISABLE_STATIC
-AC_PROG_LIBTOOL
+LT_PREREQ(2.2)
+LT_INIT([disable-static])
 
 AC_ARG_ENABLE(optimization, AS_HELP_STRING([--disable-optimization],
 			[disable code optimization through compiler]), [
