@@ -1,5 +1,5 @@
-AC_PREREQ(2.60)
-AC_INIT(pacrunner, 0.18)
+AC_PREREQ([2.69])
+AC_INIT([pacrunner], [0.18])
 
 AM_INIT_AUTOMAKE([foreign subdir-objects color-tests])
 AC_CONFIG_HEADERS(config.h)
@@ -20,7 +20,7 @@ PKG_PROG_PKG_CONFIG
 
 COMPILER_FLAGS
 
-AC_LANG_C
+AC_LANG([C])
 
 AC_PROG_CC
 AC_PROG_CC_PIE
@@ -32,14 +32,14 @@ m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
-AC_ARG_ENABLE(optimization, AC_HELP_STRING([--disable-optimization],
+AC_ARG_ENABLE(optimization, AS_HELP_STRING([--disable-optimization],
 			[disable code optimization through compiler]), [
 	if (test "${enableval}" = "no"); then
 		CFLAGS="$CFLAGS -O0"
 	fi
 ])
 
-AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug],
 			[enable compiling with debugging information]), [
 	if (test "${enableval}" = "yes" &&
 				test "${ac_cv_prog_cc_g}" = "yes"); then
@@ -47,7 +47,7 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	fi
 ])
 
-AC_ARG_ENABLE(unit, AC_HELP_STRING([--enable-unit],
+AC_ARG_ENABLE(unit, AS_HELP_STRING([--enable-unit],
 			[enable compiling unit test binaries]))
 if (test "${enable_unit}" = "yes"); then
 	AC_CHECK_LIB([cunit], CU_initialize_registry, dummy=yes,
@@ -59,7 +59,7 @@ if (test "${enable_unit}" = "yes"); then
 fi
 AM_CONDITIONAL(UNIT, test "${enable_unit}" = "yes")
 
-AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
+AC_ARG_ENABLE(pie, AS_HELP_STRING([--enable-pie],
 			[enable position independent executables flag]), [
 	if (test "${enableval}" = "yes" &&
 				test "${ac_cv_prog_cc_pie}" = "yes"); then
@@ -68,7 +68,7 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 	fi
 ])
 
-AC_ARG_ENABLE(duktape, AC_HELP_STRING([--enable-duktape],
+AC_ARG_ENABLE(duktape, AS_HELP_STRING([--enable-duktape],
 		[enable Duktape Javascript plugin support]))
 AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
 
@@ -82,7 +82,7 @@ PKG_CHECK_MODULES(DBUS, dbus-1 >= 1.2, dummy=yes,
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 
-AC_ARG_WITH(dbusconfdir, AC_HELP_STRING([--with-dbusconfdir=PATH],
+AC_ARG_WITH(dbusconfdir, AS_HELP_STRING([--with-dbusconfdir=PATH],
 	[path to D-Bus config directory]), [path_dbusconf=${withval}],
 		[path_dbusconf="`$PKG_CONFIG --variable=sysconfdir dbus-1`"])
 if (test -z "${path_dbusconf}"); then
@@ -92,7 +92,7 @@ else
 fi
 AC_SUBST(DBUS_CONFDIR)
 
-AC_ARG_WITH(dbusdatadir, AC_HELP_STRING([--with-dbusdatadir=PATH],
+AC_ARG_WITH(dbusdatadir, AS_HELP_STRING([--with-dbusdatadir=PATH],
 	[path to D-Bus data directory]), [path_dbusdata=${withval}],
 		[path_dbusdata="`$PKG_CONFIG --variable=datadir dbus-1`"])
 if (test -z "${path_dbusdata}"); then
@@ -107,7 +107,7 @@ AC_CHECK_LIB(pthread, pthread_create,
 	[AC_MSG_ERROR([Pthread support is missing])])
 AC_SUBST(PTHREAD_LIBS)
 
-AC_ARG_ENABLE(curl, AC_HELP_STRING([--enable-curl],
+AC_ARG_ENABLE(curl, AS_HELP_STRING([--enable-curl],
 		[enable CURL plugin support]), [enable_curl=${enableval}])
 if (test "${enable_curl}" = "yes"); then
 	PKG_CHECK_MODULES(CURL, libcurl >= 7.16, dummy=yes,
@@ -117,15 +117,15 @@ if (test "${enable_curl}" = "yes"); then
 fi
 AM_CONDITIONAL(CURL, test "${enable_curl}" = "yes")
 
-AC_ARG_ENABLE(test, AC_HELP_STRING([--enable-test],
+AC_ARG_ENABLE(test, AS_HELP_STRING([--enable-test],
 		[enable test/example scripts]), [enable_test=${enableval}])
 AM_CONDITIONAL(TEST, test "${enable_test}" = "yes")
 
-AC_ARG_ENABLE(libproxy, AC_HELP_STRING([--enable-libproxy],
+AC_ARG_ENABLE(libproxy, AS_HELP_STRING([--enable-libproxy],
 	[enable libproxy compatible library]), [enable_libproxy=${enableval}])
 AM_CONDITIONAL(LIBPROXY, test "${enable_libproxy}" = "yes")
 
-AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
+AC_ARG_ENABLE(datafiles, AS_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
 					[enable_datafiles=${enableval}])
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
